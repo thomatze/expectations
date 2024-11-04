@@ -84,7 +84,7 @@ const max_lines = colors.length;
 const min_lines = 1;
 const start_lines = Math.min(4, colors.length);
 
-const animationSpeed=1.0; // 1.0=aus 0.25=normal
+const animationSpeed=0.25; // 1.0=aus 0.25=normal
 
 function createLine() {
     return {
@@ -368,7 +368,7 @@ function draw() {
     new_w_data.normalize();
     WData.step_target(new_w_data, animationSpeed);
     drawWheel(WData, windowWidth/2+200, 200, startAngle);
-    drawHist(WData, windowWidth/2-400, 750.0);5
+    drawHist(WData, windowWidth/2-400, 750.0);
     if (!isConfettiActive) {
       console.log(WData.is_fair());
         if(WData.is_fair()){
