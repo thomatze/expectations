@@ -124,9 +124,11 @@ class WVerteilung {
     shift(dv) {
         this.w_liste = this.w_liste.map(([x, p]) => [x + dv, p]);
     }
+    
 
     step_target(target, lambda) {
 
+        let step_size=0;
         while (this.w_liste.length > target.w_liste.length) {
             this.w_liste.pop();
         }
@@ -137,8 +139,12 @@ class WVerteilung {
 
         this.w_liste = this.w_liste.map(([x, p], i) => {
             const [y, q] = target.w_liste[i];
-            return [lerp(x, y, lambda) || 0, lerp(p, q, lambda) || 0];
+            const new_x=lerp(x, y, lambda) || 0;
+            const new_p=lerp(p, q, lambda) || 0;
+            step_size+=Math.abs(x-new_x)+Math.abs(p-new_p);
+            return [new_x,new_p ];
         });
+        return step_size;
     }
 
     normalize() {
@@ -268,7 +274,7 @@ function drawWheel(wVert, x, y, accProb) {
 
 function drawHist(wVert, x, y) {
     const w = 800.0;
-    const h = 400.0;
+    const h = 300.0;
 
     //const [min_,max_]=wVert.get_range();
     const [min_, max_] = [-10.0, 10.0];
@@ -366,12 +372,12 @@ function draw() {
     ZL.render(windowWidth/2-400, 100);
     const new_w_data = new WVerteilung(ZL.getWListe());
     new_w_data.normalize();
-    WData.step_target(new_w_data, animationSpeed);
+    const step_size=WData.step_target(new_w_data, animationSpeed);
+    const dataChanged=Math.abs(step_size)>0.0000001;
     drawWheel(WData, windowWidth/2+200, 200, startAngle);
-    drawHist(WData, windowWidth/2-400, 750.0);
-    if (!isConfettiActive) {
-      console.log(WData.is_fair());
-        if(WData.is_fair()){
+    drawHist(WData, windowWidth/2-400, 650.0);
+    if ((!isConfettiActive)) {
+      if(WData.is_fair() && dataChanged){
         createConfetti();
         isConfettiActive=true;
         }
