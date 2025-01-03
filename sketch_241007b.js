@@ -1,17 +1,16 @@
-
-
 const min_lines = 1;
 
-const animationSpeed=0.15; // 1.0=aus 0.25=normal
+const animationSpeed = 0.15; // 1.0=aus 0.25=normal
 
-const enable_circle=true;
-const enable_hist=true;
-const enable_expectation=true;
-const enable_buttons=true;
-const enable_colors=true;
+const enable_circle = true;
+const enable_hist = true;
+const enable_expectation = true;
+const enable_buttons = true;
+const enable_colors = true;
 
 prob = "wahr"
 num = "zahl"
+num_display = "zahl_anzeige"
 
 // ChatGPT Confetti
 // Confetti colors and settings
@@ -29,7 +28,6 @@ const colors = [
 ];
 
 
-const start_lines = Math.min(4, colors.length);
 const max_lines = colors.length;
 
 // Function to create confetti particles
@@ -37,7 +35,7 @@ function createConfetti() {
     for (let i = 0; i < confettiCount; i++) {
         confettiParticles.push({
             x: random(0, width),
-            y: random(0, 2*height / 3),
+            y: random(0, 2 * height / 3),
             size: random(5, 10),
             color: random(colors),
             speedY: random(3, 6),
@@ -52,7 +50,7 @@ function drawConfetti() {
         fill(particle.color);
         noStroke();
         ellipse(particle.x, particle.y, particle.size);
-        
+
         // Update position
         particle.y += particle.speedY;
         particle.x += particle.speedX;
@@ -70,34 +68,10 @@ function drawConfetti() {
 }
 
 
-
-// Extend draw function to display confetti if active
-function draw() {
-    background("#FBFBFB");
-    startAngle += 0.000;
-    ZL.render(windowWidth / 2 - 400, 100);
-
-    const new_w_data = new WVerteilung(ZL.getWListe());
-    new_w_data.normalize();
-    WData.step_target(new_w_data, animationSpeed);
-
-    drawWheel(WData, windowWidth / 2 + 200, 200, startAngle);
-    drawHist(WData, windowWidth / 2 - 400, 750.0);
-
-    // Draw confetti if active
-    if (isConfettiActive) {
-        drawConfetti();
-    }
-}
-
-
-
-
-
 function createLine() {
     return {
         [prob]: createInput(),
-        [num]: createInput()
+        [num]: createInput(),
     };
 }
 
@@ -113,30 +87,30 @@ class WVerteilung {
     }
 
     w_summe() {
-        return this.w_liste.reduce((p1, [x, p2]) => p1 + p2, 0);
+        return this.w_liste.reduce((p1, [_x, p2]) => p1 + p2, 0);
     }
 
-    get_range() {
-        const values = this.w_liste.map(([x, p]) => x);
-        return [min(values), max(values)];
-    }
+    // get_range() {
+    //     const values = this.w_liste.map(([x, p]) => x);
+    //     return [min(values), max(values)];
+    // }
 
-    erwartung() {
+    expectation() {
         return this.w_liste.reduce((s1, [x, p]) => s1 + x * p, 0) / this.w_summe();
     }
-    
-    is_fair(){
-      return Math.abs(this.erwartung())<0.005;
+
+    is_fair() {
+        return Math.abs(this.expectation()) < 0.005;
     }
 
     shift(dv) {
         this.w_liste = this.w_liste.map(([x, p]) => [x + dv, p]);
     }
-    
+
 
     step_target(target, lambda) {
 
-        let step_size=0;
+        let step_size = 0;
         while (this.w_liste.length > target.w_liste.length) {
             this.w_liste.pop();
         }
@@ -147,10 +121,10 @@ class WVerteilung {
 
         this.w_liste = this.w_liste.map(([x, p], i) => {
             const [y, q] = target.w_liste[i];
-            const new_x=lerp(x, y, lambda) || 0;
-            const new_p=lerp(p, q, lambda) || 0;
-            step_size+=Math.abs(x-new_x)+Math.abs(p-new_p);
-            return [new_x,new_p ];
+            const new_x = lerp(x, y, lambda) || 0;
+            const new_p = lerp(p, q, lambda) || 0;
+            step_size += Math.abs(x - new_x) + Math.abs(p - new_p);
+            return [new_x, new_p];
         });
         return step_size;
     }
@@ -159,8 +133,7 @@ class WVerteilung {
         const sum = this.w_summe();
         this.w_liste = this.w_liste.map(([x, p]) => [x, (p / sum) || 0]);
     }
-    
-    
+
 
 }
 
@@ -177,30 +150,34 @@ class ZahlenListe {
             const [x, p] = w_liste[i];
             const line = this.line_arr[i];
             //line[num].value(x.toFixed(3));
-            line[num].value(x);
-            line[prob].value(p.toFixed(3));
+            //const line_vals = this.line_vals[i];
+            //line_vals[0] = x;
+            //line_vals[1] = p;
+            line[num].value(x.toFixed(3).replace(".",","));
+            line[prob].value(p.toFixed(3).replace(".",","));
         }
     }
 
     constructor(w_liste) {
         this.line_arr = Array();
+        this.line_vals = Array();
         this.set_from_w_liste(w_liste);
 
-        if(enable_buttons){
-        this.plusButton = createButton("+");
-        this.plusButton.mousePressed(() => this.addLine());
-        this.plusButton.addClass("plus");
-        
-        this.minusButton = createButton("-");
-        this.minusButton.mousePressed(() => this.removeLine());
-        this.minusButton.addClass("minus");
+        if (enable_buttons) {
+            this.plusButton = createButton("+");
+            this.plusButton.mousePressed(() => this.addLine());
+            this.plusButton.addClass("plus");
 
-        this.normButton = createButton("Σ=1");
-        this.normButton.mousePressed(() => this.normalize());
-        this.normButton.addClass("norm");
-        this.fairButton = createButton("fair");
-        this.fairButton.mousePressed(() => this.makeFair());
-        this.fairButton.addClass("fair");
+            this.minusButton = createButton("-");
+            this.minusButton.mousePressed(() => this.removeLine());
+            this.minusButton.addClass("minus");
+
+            this.normButton = createButton("norm");
+            this.normButton.mousePressed(() => this.normalize());
+            this.normButton.addClass("norm");
+            this.fairButton = createButton("fair");
+            this.fairButton.mousePressed(() => this.makeFair());
+            this.fairButton.addClass("fair");
         }
     }
 
@@ -212,18 +189,19 @@ class ZahlenListe {
 
     makeFair() {
         const wVert = new WVerteilung(this.getWListe());
-        const shift = (-1 * wVert.erwartung()) || 0;
+        const shift = (-1 * wVert.expectation()) || 0;
         wVert.shift(shift);
         this.set_from_w_liste(wVert.w_liste);
     }
 
     addLine() {
         if (this.line_arr.length < max_lines) {
-            const lineNum=this.line_arr.length;
-            const line=createLine();
+            const lineNum = this.line_arr.length;
+            const line = createLine();
             this.line_arr.push(line);
-            line[prob].addClass("prob"+lineNum);
-            line[num].addClass("num"+lineNum);
+            line[prob].addClass("prob" + lineNum);
+            line[num].addClass("num" + lineNum);
+            this.line_vals.push([0, 0]);
         }
     }
 
@@ -232,6 +210,7 @@ class ZahlenListe {
             let last_line = this.line_arr.pop();
             last_line[num].remove();
             last_line[prob].remove();
+            this.line_vals.pop();
         }
     }
 
@@ -241,24 +220,25 @@ class ZahlenListe {
         const l = this.line_arr.length;
 
         fill("black");
+        textAlign('center');
         text("Zahl", x + 0.4 * dx, y - 20);
         text("Wahrscheinlichkeit", x + 1.4 * dx, y - 20);
         noFill();
 
-        if(enable_buttons){
-        this.plusButton.position(x, y + dy * l);
-        this.minusButton.position(x + 30, y + dy * l);
-        this.normButton.position(x + dx, y + dy * l);
-        this.fairButton.position(x + dx - 80, y + dy * l);
+        if (enable_buttons) {
+            this.plusButton.position(x, y + dy * l);
+            this.minusButton.position(x + 30, y + dy * l);
+            this.normButton.position(x + dx+110, y + dy * l);
+            this.fairButton.position(x + dx - 80, y + dy * l);
         }
 
         for (let i = 0; i < l; i++) {
             this.line_arr[i][num].position(x, y + dy * i);
             this.line_arr[i][prob].position(x + dx, y + dy * i);
-            if(enable_colors){
-            this.line_arr[i][num].style("background-color", colors[i]);
-            }  
-      }
+            if (enable_colors) {
+                this.line_arr[i][num].style("background-color", colors[i]);
+            }
+        }
 
         const w_vert = new WVerteilung(this.getWListe());
         const is_norm = abs(w_vert.w_summe() - 1.0) < 0.01; // allow for some slack
@@ -266,18 +246,48 @@ class ZahlenListe {
         for (let i = 0; i < l; i++) {
             this.line_arr[i][prob].style("background-color", bg_valid_color);
         }
+        fill("black");
+        const total_w_text=w_vert.w_summe().toFixed(2);
+        const w_text=`Σ=${total_w_text}`
+        textAlign('left');
+        text(w_text, x +dx, y + dy*l+15);
+        noFill()
+    }
+
+    update_values() {
+        this.line_arr.forEach((line, i) => {
+            const line_vals = this.line_vals[i];
+            console.log("line", line);
+            const val_inds = [[0, num], [1, prob]];
+            for (let [ind, val] of val_inds) {
+                try {
+                    const num_eval = eval(line[val].value().replace(",", "."));
+                    const num_val = Number(num_eval);
+                    if (!isNaN(num_val)) {
+                        console.log("setting val", val, num_val);
+                        this.line_vals[i][ind] = num_val;
+                    } else {
+                        console.log("invalid val", val, num_val);
+                    }
+                } catch (e) {
+                }
+            }
+        });
+
     }
 
     getWListe() {
-        return this.line_arr.map(
-            line => [Number(line[num].value()), Number(line[prob].value())]
-        );
+        this.update_values();
+        return this.line_vals;
+        // return this.line_arr.map(
+        //     line => [Number(line[num].value()), Number(line[prob].value())]
+        // );
     }
 }
 
 function drawWheel(wVert, x, y, accProb) {
     const r = 200;
-    
+
 
     for (let i = 0; i < wVert.w_liste.length; i++) {
         const entry = wVert.w_liste[i];
@@ -317,31 +327,32 @@ function drawHist(wVert, x, y) {
         fill(colors[i]);
         rect(x + relPos * w - step / 2, y, step, -p * h);
         fill("black");
+        textAlign('center');
         text(val.toFixed(2), x + relPos * w, y + 10);
         noFill();
 
     }
 
-    if(enable_expectation){
-    const exp = wVert.erwartung();
-    const relPos = (exp - min_) / (max_ - min_);
-    const isFair = abs(exp - 0.00) < 0.005;
-    const col = isFair ? "green" : "red";
+    if (enable_expectation) {
+        const exp = wVert.expectation();
+        const relPos = (exp - min_) / (max_ - min_);
+        const isFair = abs(exp - 0.00) < 0.005;
+        const col = isFair ? "green" : "red";
 
 
-    const [x1, y1] = [x + relPos * w, y];
-    const [x2, y2] = [x + relPos * w - 25, y + 50];
-    const [x3, y3] = [x + relPos * w + 25, y + 50];
+        const [x1, y1] = [x + relPos * w, y];
+        const [x2, y2] = [x + relPos * w - 25, y + 50];
+        const [x3, y3] = [x + relPos * w + 25, y + 50];
 
-    stroke(col);
-    line(x1, y1, x2, y2);
-    line(x2, y2, x3, y3);
-    line(x3, y3, x1, y1);
-    noStroke();
+        stroke(col);
+        line(x1, y1, x2, y2);
+        line(x2, y2, x3, y3);
+        line(x3, y3, x1, y1);
+        noStroke();
 
-    fill(col);
-    text(exp.toFixed(2), (x2 + x3) / 2, y2 - 5);
-    noFill();
+        fill(col);
+        text(exp.toFixed(2), (x2 + x3) / 2, y2 - 5);
+        noFill();
     }
 
 
@@ -352,32 +363,32 @@ let WData;
 
 
 function getWidth() {
-  return Math.max(
-    document.body.scrollWidth,
-    document.documentElement.scrollWidth,
-    document.body.offsetWidth,
-    document.documentElement.offsetWidth,
-    document.documentElement.clientWidth
-  );
+    return Math.max(
+        document.body.scrollWidth,
+        document.documentElement.scrollWidth,
+        document.body.offsetWidth,
+        document.documentElement.offsetWidth,
+        document.documentElement.clientWidth
+    );
 }
 
-function getHeight() {
-  return Math.max(
-    document.body.scrollHeight,
-    document.documentElement.scrollHeight,
-    document.body.offsetHeight,
-    document.documentElement.offsetHeight,
-    document.documentElement.clientHeight
-  );
-}
+// function getHeight() {
+//     return Math.max(
+//         document.body.scrollHeight,
+//         document.documentElement.scrollHeight,
+//         document.body.offsetHeight,
+//         document.documentElement.offsetHeight,
+//         document.documentElement.clientHeight
+//     );
+// }
 
 let windowWidth;
 
 function setup() {
-    windowWidth=getWidth();
+    windowWidth = getWidth();
     //const canvas=document.getElementById('defaultCanvas0');
     createCanvas(windowWidth, 1000);
-    textAlign('center');
+    textSize(14);
     ZL = new ZahlenListe([
         [-2, 0.1],
         [1, 0.3],
@@ -389,28 +400,28 @@ function setup() {
 }
 
 let startAngle = 0;
+
 function draw() {
     background("#FBFBFB");
-    startAngle+=0.000;
-    ZL.render(windowWidth/2-400, 100);
+    startAngle += 0.000;
+    ZL.render(windowWidth / 2 - 400, 100);
     const new_w_data = new WVerteilung(ZL.getWListe());
     new_w_data.normalize();
-    const step_size=WData.step_target(new_w_data, animationSpeed);
-    const dataChanged=Math.abs(step_size)>0.0000001;
-    if(enable_circle){
-    drawWheel(WData, windowWidth/2+200, 200, startAngle);
+    const step_size = WData.step_target(new_w_data, animationSpeed);
+    const dataChanged = Math.abs(step_size) > 0.0000001;
+    if (enable_circle) {
+        drawWheel(WData, windowWidth / 2 + 200, 200, startAngle);
     }
-    if(enable_hist){
-    drawHist(WData, windowWidth/2-400, 650.0);
+    if (enable_hist) {
+        drawHist(WData, windowWidth / 2 - 400, 650.0);
     }
     if ((!isConfettiActive)) {
-      if(WData.is_fair() && dataChanged){
-        createConfetti();
-        isConfettiActive=true;
+        if (WData.is_fair() && dataChanged) {
+            createConfetti();
+            isConfettiActive = true;
         }
-    }  
-    else{
-      drawConfetti();
+    } else {
+        drawConfetti();
     }
-    
+
 }
