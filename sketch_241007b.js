@@ -1,3 +1,15 @@
+
+
+const min_lines = 1;
+
+const animationSpeed=0.15; // 1.0=aus 0.25=normal
+
+const enable_circle=true;
+const enable_hist=true;
+const enable_expectation=true;
+const enable_buttons=true;
+const enable_colors=true;
+
 prob = "wahr"
 num = "zahl"
 
@@ -17,6 +29,8 @@ const colors = [
 ];
 
 
+const start_lines = Math.min(4, colors.length);
+const max_lines = colors.length;
 
 // Function to create confetti particles
 function createConfetti() {
@@ -79,12 +93,6 @@ function draw() {
 
 
 
-
-const max_lines = colors.length;
-const min_lines = 1;
-const start_lines = Math.min(4, colors.length);
-
-const animationSpeed=0.25; // 1.0=aus 0.25=normal
 
 function createLine() {
     return {
@@ -168,7 +176,8 @@ class ZahlenListe {
         for (let i = 0; i < w_liste.length; i++) {
             const [x, p] = w_liste[i];
             const line = this.line_arr[i];
-            line[num].value(x.toFixed(3));
+            //line[num].value(x.toFixed(3));
+            line[num].value(x);
             line[prob].value(p.toFixed(3));
         }
     }
@@ -177,17 +186,22 @@ class ZahlenListe {
         this.line_arr = Array();
         this.set_from_w_liste(w_liste);
 
+        if(enable_buttons){
         this.plusButton = createButton("+");
         this.plusButton.mousePressed(() => this.addLine());
-
+        this.plusButton.addClass("plus");
+        
         this.minusButton = createButton("-");
         this.minusButton.mousePressed(() => this.removeLine());
+        this.minusButton.addClass("minus");
 
         this.normButton = createButton("Σ=1");
         this.normButton.mousePressed(() => this.normalize());
-
+        this.normButton.addClass("norm");
         this.fairButton = createButton("fair");
         this.fairButton.mousePressed(() => this.makeFair());
+        this.fairButton.addClass("fair");
+        }
     }
 
     normalize() {
@@ -205,7 +219,11 @@ class ZahlenListe {
 
     addLine() {
         if (this.line_arr.length < max_lines) {
-            this.line_arr.push(createLine());
+            const lineNum=this.line_arr.length;
+            const line=createLine();
+            this.line_arr.push(line);
+            line[prob].addClass("prob"+lineNum);
+            line[num].addClass("num"+lineNum);
         }
     }
 
@@ -227,16 +245,20 @@ class ZahlenListe {
         text("Wahrscheinlichkeit", x + 1.4 * dx, y - 20);
         noFill();
 
+        if(enable_buttons){
         this.plusButton.position(x, y + dy * l);
         this.minusButton.position(x + 30, y + dy * l);
         this.normButton.position(x + dx, y + dy * l);
         this.fairButton.position(x + dx - 80, y + dy * l);
+        }
 
         for (let i = 0; i < l; i++) {
             this.line_arr[i][num].position(x, y + dy * i);
             this.line_arr[i][prob].position(x + dx, y + dy * i);
+            if(enable_colors){
             this.line_arr[i][num].style("background-color", colors[i]);
-        }
+            }  
+      }
 
         const w_vert = new WVerteilung(this.getWListe());
         const is_norm = abs(w_vert.w_summe() - 1.0) < 0.01; // allow for some slack
@@ -300,7 +322,7 @@ function drawHist(wVert, x, y) {
 
     }
 
-
+    if(enable_expectation){
     const exp = wVert.erwartung();
     const relPos = (exp - min_) / (max_ - min_);
     const isFair = abs(exp - 0.00) < 0.005;
@@ -320,6 +342,7 @@ function drawHist(wVert, x, y) {
     fill(col);
     text(exp.toFixed(2), (x2 + x3) / 2, y2 - 5);
     noFill();
+    }
 
 
 }
@@ -356,7 +379,7 @@ function setup() {
     createCanvas(windowWidth, 1000);
     textAlign('center');
     ZL = new ZahlenListe([
-        [-1, 0.1],
+        [-2, 0.1],
         [1, 0.3],
         [0, 0.5],
         [4, 0.1]
@@ -374,8 +397,12 @@ function draw() {
     new_w_data.normalize();
     const step_size=WData.step_target(new_w_data, animationSpeed);
     const dataChanged=Math.abs(step_size)>0.0000001;
+    if(enable_circle){
     drawWheel(WData, windowWidth/2+200, 200, startAngle);
+    }
+    if(enable_hist){
     drawHist(WData, windowWidth/2-400, 650.0);
+    }
     if ((!isConfettiActive)) {
       if(WData.is_fair() && dataChanged){
         createConfetti();
